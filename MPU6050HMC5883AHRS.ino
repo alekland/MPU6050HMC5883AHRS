@@ -32,6 +32,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 
+#ifdef PCD8544
 // Using NOKIA 5110 monochrome 84 x 48 pixel display
 // pin 9 - Serial clock out (SCLK)
 // pin 8 - Serial data out (DIN)
@@ -39,6 +40,7 @@
 // pin 5 - LCD chip select (CS)
 // pin 6 - LCD reset (RST)
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7, 5, 6);
+#endif
 
 // Define registers per MPU6050, Register Map and Descriptions, Rev 4.2, 08/19/2013 6 DOF Motion sensor fusion device
 // Invensense Inc., www.invensense.com
@@ -262,7 +264,15 @@ void setup()
   digitalWrite(intPin, LOW);
   pinMode(blinkPin, OUTPUT);
   digitalWrite(blinkPin, HIGH);
-  
+
+  // Read the WHO_AM_I register, this is a good test of communication
+  uint8_t c = readByte(MPU6050_ADDRESS, WHO_AM_I_MPU6050);  // Read WHO_AM_I register for MPU-6050
+  // Read the WHO_AM_I register of the HMC5883L, this is a good test of communication
+  uint8_t e = readByte(HMC5883L_ADDRESS, HMC5883L_IDA);  // Read WHO_AM_I register A for HMC5883L
+  uint8_t f = readByte(HMC5883L_ADDRESS, HMC5883L_IDB);  // Read WHO_AM_I register B for HMC5883L
+  uint8_t g = readByte(HMC5883L_ADDRESS, HMC5883L_IDC);  // Read WHO_AM_I register C for HMC5883L
+
+#ifdef PCD8544
   display.begin(); // Initialize the display
   display.setContrast(58); // Set the contrast
   display.setRotation(2); //  0 or 2) width = width, 1 or 3) width = height, swapped etc.
@@ -284,8 +294,6 @@ void setup()
   display.setTextColor(BLACK); // Set pixel color; 1 on the monochrome screen
   display.clearDisplay();   // clears the screen and buffer
 
-  // Read the WHO_AM_I register, this is a good test of communication
-  uint8_t c = readByte(MPU6050_ADDRESS, WHO_AM_I_MPU6050);  // Read WHO_AM_I register for MPU-6050
   display.setCursor(20,0); display.print("MPU6050");
   display.setCursor(0,10); display.print("I AM");
   display.setCursor(0,20); display.print(c, HEX);  
@@ -294,10 +302,6 @@ void setup()
   display.display();
   delay(1000); 
 
- // Read the WHO_AM_I register of the HMC5883L, this is a good test of communication
-  uint8_t e = readByte(HMC5883L_ADDRESS, HMC5883L_IDA);  // Read WHO_AM_I register A for HMC5883L
-  uint8_t f = readByte(HMC5883L_ADDRESS, HMC5883L_IDB);  // Read WHO_AM_I register B for HMC5883L
-  uint8_t g = readByte(HMC5883L_ADDRESS, HMC5883L_IDC);  // Read WHO_AM_I register C for HMC5883L
   display.clearDisplay();   // clears the screen and buffer
   display.setCursor(20,0);  display.print("HMC5883L");
   display.setCursor(0,10);  display.print("I AM");
@@ -310,6 +314,7 @@ void setup()
   display.setCursor(40,40); display.print(0x33, HEX);  
   display.display();
   delay(1000); 
+#endif
   
   if (c == 0x68 && e == 0x48 && f == 0x34 && g == 0x33) // WHO_AM_I should always be 0x68
   {  
@@ -324,12 +329,15 @@ void setup()
 //    Serial.print("z-axis self test: gyration trim within : "); Serial.print(SelfTest[5],1); Serial.println("% of factory value");
 
     if(SelfTest[0] < 1.0f && SelfTest[1] < 1.0f && SelfTest[2] < 1.0f && SelfTest[3] < 1.0f && SelfTest[4] < 1.0f && SelfTest[5] < 1.0f) {
+#ifdef PCD8544
     display.clearDisplay();
     display.setCursor(0, 30); display.print("Pass Selftest!");  
     display.display();
     delay(1000);
+#endif
   
     calibrateMPU6050(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers  
+#ifdef PCD8544
     display.clearDisplay();
      
     display.setCursor(0, 0); display.print("MPU6050 bias");
@@ -347,22 +355,27 @@ void setup()
  
     display.display();
     delay(1000); 
+#endif
     
     initMPU6050(); Serial.println("MPU6050 initialized for active data mode...."); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
 
     if(selfTestHMC5883L()) {   // perform magnetometer self test
     Serial.print(" HMC5883L passed self test!");
+#ifdef PCD8544
     display.clearDisplay();
     display.setCursor(0, 20); display.print("HMC5883L pass");
     display.display();
     delay(1000);
+#endif
   }
   else {
     Serial.print(" HMC5883L failed self test!");
+#ifdef PCD8544
     display.clearDisplay();
     display.setCursor(0, 20); display.print("HMC5883L fail");
     display.display(); 
     delay(1000);
+#endif
   }
   initHMC5883L(); // Initialize and configure magnetometer
   Serial.println("HMC5883L initialized for active data mode....");  
@@ -478,7 +491,7 @@ void loop()
     Serial.println(roll, 2);
 
 //    Serial.print("average rate = "); Serial.print(1.0f/deltat, 2); Serial.println(" Hz");
-    
+#ifdef PCD8544
     display.clearDisplay();
       
     display.setCursor(0, 0); display.print(" x   y   z  ");
@@ -505,7 +518,7 @@ void loop()
   
     display.setCursor(0, 40); display.print("rt: "); display.print(1.0f/deltat, 2); display.print(" Hz"); 
     display.display();
-    
+#endif
     blinkOn = ~blinkOn;
     count = millis();  
 }
